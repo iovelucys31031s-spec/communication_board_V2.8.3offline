@@ -1,0 +1,17 @@
+{
+  "name": "有聲注音溝通板",
+  "short_name": "注音溝通板",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#e0f7fa",
+  "theme_color": "#e0f7fa",
+  "description": "提供低口語者使用的有聲注音溝通輔具 (支援離線使用)",
+  "icons": [
+    {
+      "src": "./icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

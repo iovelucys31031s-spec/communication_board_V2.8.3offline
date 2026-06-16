@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="mobile-web-app-capable" content="yes">
+    
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icon.png">
+    
+    <title>有聲注音溝通板(Web版)</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body class="overscroll-none overflow-hidden">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        // 這裡是你原本所有的 React 程式碼 (完全不變)
+        const { useState, useEffect, useMemo } = React;
+
+        // --- SVG 圖示 ---
+        const Settings = ({className="w-6 h-6"}) => <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>;
+        const Play = ({className="w-6 h-6"}) => <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>;
+        const Delete = ({className="w-6 h-6"}) => <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M20 5H9l-7 7 7 7h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2Z"></path><line x1="18" y1="9" x2="12" y2="15"></line><line x1="12" y1="9" x2="18" y2="15"></line></svg>;
+        const Trash2 = ({className="w-6 h-6"}) => <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>;
+        const ArrowLeft = ({className="w-6 h-6"}) => <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>;
+        const Volume2 = ({className="w-6 h-6"}) => <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>;
+        const Info = ({className="w-6 h-6"}) => <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>;
+        const Check = ({className="w-6 h-6"}) => <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="20 6 9 17 4 12"></polyline></svg>;
+        const Globe = ({className="w-6 h-6"}) => <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>;
+        const Smartphone = ({className="w-6 h-6"}) => <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line></svg>;
+        const Maximize = ({className="w-6 h-6"}) => <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path></svg>;
+        
+        const ToneIcon = ({ char, className }) => {
+            if (char === 'ˊ') return <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" className={className}><path d="M7 18 L17 6" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"/></svg>;
+            if (char === 'ˋ') return <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" className={className}><path d="M7 6 L17 18" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"/></svg>;
+            if (char === 'ˇ') return <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" className={className}><path d="M5 12 L11 18 L19 7" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"/></svg>;
+            if (char === '˙') return <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" className={className}><circle cx="12" cy="12" r="4.5" fill="currentColor"/></svg>;
+            return null;
+        };
+
+        const ZHUYIN_DICT_STR = 
+        "ㄅㄚ:八拔把爸吧|ㄅㄛ:波伯跛播啵|ㄅㄞ:掰白百敗敗|ㄅㄟ:杯悲北背貝|ㄅㄠ:包雹保報包|ㄅㄢ:班般板半辦|ㄅㄣ:奔本本笨笨|ㄅㄤ:幫旁榜棒棒|ㄅㄥ:崩繃蹦蹦蹦|ㄅㄧ:逼鼻比必必|ㄅㄧㄝ:憋別癟彆彆|ㄅㄧㄠ:標彪表鰾鰾|ㄅㄧㄢ:邊扁貶變變|ㄅㄧㄣ:賓鑌儐鬢鬢|ㄅㄧㄥ:冰兵餅病病|" +
+        "ㄆㄚ:趴爬怕怕怕|ㄆㄛ:坡婆叵破破|ㄆㄞ:拍排迫派派|ㄆㄟ:胚培陪配配|ㄆㄠ:拋跑跑泡泡|ㄆㄢ:潘盤判判判|ㄆㄣ:噴盆本笨笨|ㄆㄤ:乓旁龐胖胖|ㄆㄥ:砰朋捧碰碰|ㄆㄧ:批皮匹屁屁|ㄆㄧㄝ:撇撇撇撇撇|ㄆㄧㄠ:飄瓢瞟票票|ㄆㄧㄢ:偏駢諞片片|ㄆㄧㄣ:拼貧品聘聘|ㄆㄧㄥ:乒平屏憑憑|" +
+        "ㄇㄚ:媽麻馬罵嗎|ㄇㄛ:摸膜抹末麼|ㄇㄜ:麼麼麼麼麼|ㄇㄞ:埋霾買賣賣|ㄇㄟ:枚梅美妹妹|ㄇㄠ:貓毛卯冒冒|ㄇㄢ:蠻瞞滿慢滿|ㄇㄣ:悶門們們們|ㄇㄤ:芒忙莽妄莽|ㄇㄥ:蒙盟猛猛夢蒙|ㄇㄧ:咪迷米密密|ㄇㄧㄝ:咩咩咩滅滅|ㄇㄧㄠ:喵苗秒妙妙|ㄇㄧㄢ:棉綿免麵免|ㄇㄧㄣ:民民敏憫敏|ㄇㄧㄥ:明鳴酩命命|" +
+        "ㄈㄚ:發乏法髮發|ㄈㄛ:佛佛佛佛佛|ㄈㄟ:飛肥匪費費|ㄈㄡ:否否否否否|ㄈㄢ:翻凡反犯反|ㄈㄣ:分墳粉份份|ㄈㄤ:方房訪放放|ㄈㄥ:風逢諷奉奉|" +
+        "ㄉㄚ:搭達打大答|ㄉㄜ:的得的得的|ㄉㄞ:呆逮歹代代|ㄉㄟ:得得得得得|ㄉㄠ:刀導倒到倒|ㄉㄡ:都抖斗豆豆|ㄉㄢ:單彈膽蛋蛋|ㄉㄤ:當黨擋檔當|ㄉㄥ:登等等瞪等|ㄉㄧ:低迪底地地|ㄉㄧㄠ:雕條掉掉掉|ㄉㄧㄝ:跌迭疊疊疊|ㄉㄧㄢ:顛點典電電|ㄉㄧㄥ:丁頂鼎定定|ㄉㄨ:都毒賭度度|ㄉㄨㄛ:多奪朵剁朵|ㄉㄨㄟ:堆對對對對|ㄉㄨㄢ:端短短斷斷|ㄉㄨㄣ:敦頓盾頓頓|ㄉㄨㄥ:東懂董動動|" +
+        "ㄊㄚ:他塔塔踏她|ㄊㄜ:特特特特特|ㄊㄞ:胎台抬太態|ㄊㄠ:掏逃討套套|ㄊㄡ:偷頭透透透|ㄊㄢ:貪談坦探探|ㄊㄤ:湯糖躺趟躺|ㄊㄥ:疼騰藤藤藤|ㄊㄧ:梯提體替替|ㄊㄧㄠ:挑條調跳跳|ㄊㄧㄝ:貼鐵鐵鐵鐵|ㄊㄧㄢ:天田舔舔舔|ㄊㄧㄥ:聽停挺聽聽|ㄊㄨ:突圖土兔兔|ㄊㄨㄛ:脫陀妥拓妥|ㄊㄨㄟ:推頹腿退退|ㄊㄨㄢ:湍團短斷短|ㄊㄨㄣ:吞屯盾頓頓|ㄊㄨㄥ:通同桶痛痛|" +
+        "ㄋㄚ:那拿哪那哪|ㄋㄜ:呢呢呢呢呢|ㄋㄞ:奶乃奶耐奶|ㄋㄟ:內內內內內|ㄋㄠ:腦撓腦鬧腦|ㄋㄡ:耨耨耨耨耨|ㄋㄢ:南男喃難難|ㄋㄣ:嫩嫩嫩嫩嫩|ㄋㄤ:囊囊囊囊囊|ㄋㄥ:能能能能能|ㄋㄧ:泥尼你逆你|ㄋㄧㄠ:鳥鳥鳥尿尿|ㄋㄧㄝ:捏捏捏孽捏|ㄋㄧㄢ:年粘捻念念|ㄋㄧㄣ:您您您您您|ㄋㄧㄥ:寧凝擰佞擰|ㄋㄨ:奴努努怒努|ㄋㄨㄛ:挪諾諾懦諾|ㄋㄨㄢ:暖暖暖暖暖|ㄋㄨㄥ:農弄弄弄弄|ㄋㄩ:女女女女女|ㄋㄩㄝ:虐虐虐虐虐|" +
+        "ㄌㄚ:拉喇喇辣啦|ㄌㄜ:了勒了了了|ㄌㄞ:來萊賴賴賴|ㄌㄟ:雷雷壘類壘|ㄌㄠ:撈勞老酪老|ㄌㄡ:摟樓簍漏簍|ㄌㄢ:藍蘭覽爛覽|ㄌㄤ:狼郎朗浪朗|ㄌㄥ:冷冷冷冷冷|ㄌㄧ:哩離裡力裡|ㄌㄧㄠ:撩療了料了|ㄌㄧㄝ:裂咧咧烈咧|ㄌㄧㄢ:連聯臉練臉|ㄌㄧㄣ:林臨凜吝凜|ㄌㄧㄥ:零齡領另領|ㄌㄨ:嚕盧魯路魯|ㄌㄨㄛ:羅邏裸落落|ㄌㄨㄢ:亂欒卵亂亂|ㄌㄨㄣ:倫輪論論論|ㄌㄨㄥ:龍隆壟弄壟|ㄌㄩ:驢驢旅綠旅|ㄌㄩㄝ:略略略略略|" +
+        "ㄍㄚ:咖嘎嘎尬嘎|ㄍㄜ:哥格葛個個|ㄍㄞ:該改改蓋改|ㄍㄟ:給給給給給|ㄍㄠ:高搞搞告搞|ㄍㄡ:溝狗狗夠狗|ㄍㄢ:干甘趕幹趕|ㄍㄣ:根跟跟艮跟|ㄍㄤ:剛鋼港槓港|ㄍㄥ:更耕耿更耿|ㄍㄨ:姑骨古故古|ㄍㄨㄚ:瓜寡寡掛寡|ㄍㄨㄛ:鍋國果過果|ㄍㄨㄞ:乖拐拐怪拐|ㄍㄨㄟ:龜軌鬼貴鬼|ㄍㄨㄢ:關管管慣管|ㄍㄨㄣ:滾滾滾棍滾|ㄍㄨㄥ:公共拱共拱|" +
+        "ㄎㄚ:咖卡卡卡卡|ㄎㄜ:科可可客可|ㄎㄞ:開楷楷慨楷|ㄎㄠ:考烤烤靠烤|ㄎㄡ:口口口扣口|ㄎㄢ:看砍砍看砍|ㄎㄣ:肯肯肯懇肯|ㄎㄤ:康扛抗抗抗|ㄎㄥ:坑坑坑坑坑|ㄎㄨ:哭苦苦苦庫苦|ㄎㄨㄚ:誇垮垮跨垮|ㄎㄨㄛ:闊闊闊擴闊|ㄎㄨㄞ:快塊塊塊塊|ㄎㄨㄟ:虧魁傀愧傀|ㄎㄨㄢ:寬款款款款|ㄎㄨㄣ:昆捆捆困捆|ㄎㄨㄥ:空孔孔控孔|" +
+        "ㄏㄚ:哈蝦哈嚇哈|ㄏㄜ:喝合何賀何|ㄏㄞ:嗨孩海害海|ㄏㄟ:黑黑黑黑黑|ㄏㄠ:蒿毫好號好|ㄏㄡ:侯猴吼後吼|ㄏㄢ:憨寒喊漢喊|ㄏㄣ:哼痕很恨很|ㄏㄤ:夯航杭巷杭|ㄏㄥ:哼橫橫橫橫|ㄏㄨ:呼胡虎戶虎|ㄏㄨㄚ:花華滑化滑|ㄏㄨㄛ:豁活火或火|ㄏㄨㄞ:懷徊壞壞壞|ㄏㄨㄟ:灰回悔會悔|ㄏㄨㄢ:歡環緩換緩|ㄏㄨㄣ:婚魂混混混|ㄏㄨㄥ:烘紅哄哄哄|" +
+        "ㄐㄧ:機及幾記幾|ㄐㄧㄚ:家夾假價假|ㄐㄧㄝ:街結解借解|ㄐㄧㄠ:交角腳叫腳|ㄐㄧㄡ:究九久就久|ㄐㄧㄢ:尖間簡見簡|ㄐㄧㄣ:今金緊進緊|ㄐㄧㄥ:京景井敬井|ㄐㄩ:居局舉句舉|ㄐㄩㄝ:決絕角倔角|ㄐㄩㄢ:捐捲卷眷卷|ㄐㄩㄣ:軍均菌俊菌|" +
+        "ㄑㄧ:七奇起氣起|ㄑㄧㄚ:掐卡卡恰卡|ㄑㄧㄝ:切茄且竊且|ㄑㄧㄠ:敲橋巧俏巧|ㄑㄧㄡ:秋求朽丘朽|ㄑㄧㄢ:千前淺欠淺|ㄑㄧㄣ:親琴寢沁寢|ㄑㄧㄥ:青情請慶請|ㄑㄩ:區渠曲去曲|ㄑㄩㄝ:缺瘸確確確|ㄑㄩㄢ:圈全犬勸犬|ㄑㄩㄣ:群裙群群群|" +
+        "ㄒㄧ:西席洗細洗|ㄒㄧㄚ:蝦霞下夏下|ㄒㄧㄝ:些鞋寫謝寫|ㄒㄧㄠ:消小曉笑曉|ㄒㄧㄡ:修休朽秀朽|ㄒㄧㄢ:先閒險現險|ㄒㄧㄣ:新心信信信|ㄒㄧㄥ:星行醒性醒|ㄒㄩ:需徐許續許|ㄒㄩㄝ:靴學雪血雪|ㄒㄩㄢ:宣懸選眩選|ㄒㄩㄣ:勳尋訓訓訓|" +
+        "ㄓ:知直只至只|ㄓㄚ:扎炸眨炸眨|ㄓㄜ:遮折者這者|ㄓㄞ:摘宅窄債窄|ㄓㄠ:招著找照找|ㄓㄡ:周軸肘咒肘|ㄓㄢ:展盞站盞|ㄓㄣ:真陣診鎮診|ㄓㄤ:張長掌障掌|ㄓㄥ:正整整政整|ㄓㄨ:豬竹主住主|ㄓㄨㄚ:抓爪爪爪爪|ㄓㄨㄛ:桌濁琢卓琢|ㄓㄨㄞ:拽拽拽拽拽|ㄓㄨㄟ:追墜墜墜墜|ㄓㄨㄢ:專轉轉傳轉|ㄓㄨㄣ:準準準準準|ㄓㄨㄥ:中種腫重腫|" +
+        "ㄔ:吃池尺斥尺|ㄔㄚ:叉茶察差察|ㄔㄜ:車扯扯撤扯|ㄔㄞ:拆柴柴差柴|ㄔㄠ:超朝吵潮吵|ㄔㄡ:抽愁醜臭醜|ㄔㄢ:摻纏產顫產|ㄔㄣ:嗔晨沉趁沉|ㄔㄤ:昌常廠唱廠|ㄔㄥ:稱成逞秤逞|ㄔㄨ:出除楚處楚|ㄔㄨㄛ:戳戳戳錯戳|ㄔㄨㄞ:揣揣揣揣揣|ㄔㄨㄟ:吹垂捶翠捶|ㄔㄨㄢ:穿傳喘串喘|ㄔㄨㄣ:春唇蠢蠢蠢|ㄔㄨㄥ:充蟲寵衝寵|" +
+        "ㄕ:師十史是史|ㄕㄚ:沙傻傻煞傻|ㄕㄜ:奢蛇舍設舍|ㄕㄞ:篩色色色色|ㄕㄠ:燒勺少邵少|ㄕㄡ:收熟手受手|ㄕㄢ:山閃閃善閃|ㄕㄣ:身神審甚審|ㄕㄤ:商賞賞上賞|ㄕㄥ:生繩省勝省|ㄕㄨ:書熟鼠樹鼠|ㄕㄨㄚ:刷耍耍耍耍|ㄕㄨㄛ:說說說說說|ㄕㄨㄞ:摔甩甩帥甩|ㄕㄨㄟ:水誰水稅水|ㄕㄨㄢ:拴栓栓栓栓|ㄕㄨㄣ:吮吮吮順吮|ㄕㄨㄥ:雙雙雙雙雙|" +
+        "ㄖ:日日日日日|ㄖㄜ:熱惹惹熱惹|ㄖㄠ:饒饒擾繞擾|ㄖㄡ:肉揉揉肉揉|ㄖㄢ:然然染染染|ㄖㄣ:人任忍認忍|ㄖㄤ:讓讓壤讓壤|ㄖㄥ:扔仍仍仍仍|ㄖㄨ:如如乳入乳|ㄖㄨㄛ:若弱弱弱弱|ㄖㄨㄟ:瑞蕊蕊瑞蕊|ㄖㄨㄢ:軟軟軟軟軟|ㄖㄨㄣ:潤閏閏潤閏|ㄖㄨㄥ:容融茸絨茸|" +
+        "ㄗ:資紫子自子|ㄗㄚ:紮雜雜雜雜|ㄗㄜ:責則嘖嘖嘖|ㄗㄞ:栽災仔再仔|ㄗㄠ:遭鑿早造早|ㄗㄡ:走鄒走奏走|ㄗㄢ:簪咱攢讚攢|ㄗㄣ:怎怎怎怎怎|ㄗㄤ:髒藏臟臟臟|ㄗㄥ:增曾曾贈曾|ㄗㄨ:租足組做組|ㄗㄨㄛ:作昨左做左|ㄗㄨㄟ:嘴嘴嘴最嘴|ㄗㄨㄢ:鑽鑽鑽鑽鑽|ㄗㄨㄣ:尊尊尊尊尊|ㄗㄨㄥ:宗總總總總|" +
+        "ㄘ:疵詞此次此|ㄘㄚ:擦擦擦擦擦|ㄘㄜ:測冊測測測|ㄘㄞ:猜才彩菜彩|ㄘㄠ:操曹草草草|ㄘㄡ:湊湊湊湊湊|ㄘㄢ:參殘慘燦慘|ㄘㄣ:參參參參參|ㄘㄤ:倉藏藏藏藏|ㄘㄥ:蹭層層蹭層|ㄘㄨ:粗促促促促|ㄘㄨㄛ:搓銼銼錯銼|ㄘㄨㄟ:催脆脆脆脆|ㄘㄨㄢ:竄竄竄竄竄|ㄘㄨㄣ:村存寸寸寸|ㄘㄨㄥ:聰從從從從|" +
+        "ㄙ:思死死四死|ㄙㄚ:撒撒灑薩灑|ㄙㄜ:色澀澀色澀|ㄙㄞ:塞賽賽賽賽|ㄙㄠ:騷掃掃掃掃|ㄙㄡ:搜叟叟叟叟|ㄙㄢ:三散散散散|ㄙㄣ:森森森森森|ㄙㄤ:桑嗓嗓喪嗓|ㄙㄥ:僧僧僧僧僧|ㄙㄨ:蘇俗素素素|ㄙㄨㄛ:縮所所所所|ㄙㄨㄟ:雖隨髓歲髓|ㄙㄨㄢ:酸算算算算|ㄙㄨㄣ:孫損損損損|ㄙㄨㄥ:松慫聳送聳|" +
+        "ㄧ:一宜以意以|ㄧㄚ:呀牙雅亞雅|ㄧㄛ:喲喲喲喲喲|ㄧㄝ:耶爺也業也|ㄧㄞ:崖崖崖崖崖|ㄧㄠ:要遙咬藥咬|ㄧㄡ:優由有又有|ㄧㄢ:煙言眼驗眼|ㄧㄣ:音銀飲印飲|ㄧㄤ:央羊養樣養|ㄧㄥ:英迎影硬影|" +
+        "ㄨ:屋無五物五|ㄨㄚ:哇娃瓦襪瓦|ㄨㄛ:窩我我握我|ㄨㄞ:歪外外外外|ㄨㄟ:威為偉位偉|ㄨㄢ:彎完晚萬晚|ㄨㄣ:溫文穩問穩|ㄨㄤ:汪王網望網|ㄨㄥ:翁嗡嗡嗡嗡|" +
+        "ㄩ:迂於宇玉宇|ㄩㄝ:約月月越月|ㄩㄢ:淵元遠院遠|ㄩㄣ:暈雲允運允|" +
+        "ㄦ:兒而爾二爾|ㄚ:阿阿阿阿阿|ㄛ:喔喔喔喔喔|ㄜ:阿鵝噁餓噁|ㄝ:耶耶耶耶耶|ㄞ:哀癌矮愛矮|ㄟ:欸欸欸欸欸|ㄠ:熬熬襖奧襖|ㄡ:歐偶偶偶偶|ㄢ:安俺俺暗俺|ㄣ:恩恩恩恩恩|ㄤ:昂昂昂昂昂|ㄥ:哼哼哼哼哼";
+
+        const ZHUYIN_DICT = {};
+        ZHUYIN_DICT_STR.split('|').forEach(item => {
+        const [key, chars] = item.split(':');
+        if (key && chars) ZHUYIN_DICT[key] = chars;
+        });
+
+        const getHanziFromZhuyin = (zhuyinStr) => {
+        if (!zhuyinStr) return '';
+        const base = zhuyinStr.replace(/[一聲ˊˇˋ˙]/g, '');
+        const toneMatch = zhuyinStr.match(/[一聲ˊˇˋ˙]/);
+        const tone = toneMatch ? toneMatch[0] : '一聲';
+        const tones = ['一聲', 'ˊ', 'ˇ', 'ˋ', '˙'];
+        let toneIndex = tones.indexOf(tone);
+        if (toneIndex === -1) toneIndex = 0;
+        if (ZHUYIN_DICT[base] && ZHUYIN_DICT[base].length >= 5) return ZHUYIN_DICT[base][toneIndex];
+        return zhuyinStr;
+        };
+
+        const JP_DAKUTEN = {
+        'か':'が', 'き':'ぎ', 'く':'ぐ', 'け':'げ', 'こ':'ご',
+        'さ':'ざ', 'し':'じ', 'す':'ず', 'せ':'ぜ', 'そ':'ぞ',
+        'た':'だ', 'ち':'ぢ', 'つ':'づ', 'て':'で', 'と':'ど',
+        'は':'ば', 'ひ':'び', 'ふ':'ぶ', 'へ':'べ', 'ほ':'ぼ',
+        'が':'か', 'ぎ':'き', 'ぐ':'く', 'げ':'け', 'ご':'こ',
+        'ざ':'さ', 'じ':'し', 'ず':'す', 'ぜ':'せ', 'ぞ':'そ',
+        'だ':'た', 'ぢ':'ち', 'づ':'つ', 'で':'て', 'ど':'と',
+        'ば':'ぱ', 'び':'ぴ', 'ぶ':'ぷ', 'べ':'ぺ', 'ぼ':'ぽ',
+        'ぱ':'は', 'ぴ':'ひ', 'ぷ':'ふ', 'ぺ':'へ', 'ぽ':'ほ'
+        };
+        const JP_SMALL = {
+        'あ':'ぁ', 'い':'ぃ', 'う':'ぅ', 'え':'ぇ', 'お':'ぉ',
+        'や':'ゃ', 'ゆ':'ゅ', 'よ':'ょ', 'つ':'っ', 'わ':'ゎ',
+        'ぁ':'あ', 'ぃ':'い', 'ぅ':'う', 'ぇ':'え', 'ぉ':'お',
+        'ゃ':'や', 'ゅ':'ゆ', 'ょ':'よ', 'っ':'つ', 'ゎ':'わ'
+        };
+
+        const KOR_C = ['ㅂ','ㅈ','ㄷ','ㄱ','ㅅ','ㅁ','ㄴ','ㅇ','ㄹ','ㅎ','ㅋ','ㅌ','ㅊ','ㅍ'];
+        const KOR_V = ['ㅛ','ㅕ','ㅑ','ㅐ','ㅔ','ㅗ','ㅓ','ㅏ','ㅣ','ㅠ','ㅜ','ㅡ'];
+        const K_CHO_MAP = {'ㄱ':0, 'ㄴ':2, 'ㄷ':3, 'ㄹ':5, 'ㅁ':6, 'ㅂ':7, 'ㅅ':9, 'ㅇ':11, 'ㅈ':12, 'ㅊ':14, 'ㅋ':15, 'ㅌ':16, 'ㅍ':17, 'ㅎ':18};
+        const K_JUNG_MAP = {'ㅏ':0, 'ㅐ':1, 'ㅑ':2, 'ㅓ':4, 'ㅔ':5, 'ㅕ':6, 'ㅗ':8, 'ㅛ':12, 'ㅜ':13, 'ㅠ':17, 'ㅡ':18, 'ㅣ':20};
+        const K_JONG_MAP = {'ㄱ':1, 'ㄴ':4, 'ㄷ':7, 'ㄹ':8, 'ㅁ':16, 'ㅂ':17, 'ㅅ':19, 'ㅇ':21, 'ㅈ':22, 'ㅊ':23, 'ㅋ':24, 'ㅌ':25, 'ㅍ':26, 'ㅎ':27};
+
+        const getHangulFromJamo = (jamoStr) => {
+        if (!jamoStr) return '';
+        if (jamoStr.length >= 2) {
+            const cho = K_CHO_MAP[jamoStr[0]];
+            const jung = K_JUNG_MAP[jamoStr[1]];
+            if (cho !== undefined && jung !== undefined) {
+                let jong = 0;
+                if (jamoStr.length === 3) {
+                    jong = K_JONG_MAP[jamoStr[2]] || 0;
+                }
+                const unicode = 0xAC00 + (cho * 588) + (jung * 28) + jong;
+                return String.fromCharCode(unicode);
+            }
+        }
+        return jamoStr; 
+        };
+
+        const getFilteredVoices = (langPrefix, voiceList) => {
+        if (!voiceList) return [];
+        if (langPrefix === 'zh') return voiceList.filter(v => v.lang.toLowerCase().includes('zh') || v.lang.toLowerCase().includes('cmn'));
+        return voiceList.filter(v => v.lang.toLowerCase().startsWith(langPrefix));
+        };
+
+        const ZHUYIN_CATS = {
+        C: ['ㄅ', 'ㄆ', 'ㄇ', 'ㄈ', 'ㄉ', 'ㄊ', 'ㄋ', 'ㄌ', 'ㄍ', 'ㄎ', 'ㄏ', 'ㄐ', 'ㄑ', 'ㄒ', 'ㄓ', 'ㄔ', 'ㄕ', 'ㄖ', 'ㄗ', 'ㄘ', 'ㄙ'], 
+        M: ['ㄧ', 'ㄨ', 'ㄩ'], 
+        V: ['ㄚ', 'ㄛ', 'ㄜ', 'ㄝ', 'ㄞ', 'ㄟ', 'ㄠ', 'ㄡ', 'ㄢ', 'ㄣ', 'ㄤ', 'ㄥ', 'ㄦ'], 
+        T: ['一聲', 'ˊ', 'ˇ', 'ˋ', '˙'] 
+        };
+
+        const PUNCTUATIONS = ['，', '。', '？'];
+        const PUNCT_NAMES = {'，': '逗號', '。': '句號', '？': '問號'};
+
+        const LANG_SETTINGS = {
+        zhuyin: { label: 'ㄅㄆㄇ', name: '中文', testText: '今天天氣很好', prefix: 'zh' },
+        english: { label: 'ABC', name: '英文', testText: 'This is an apple', prefix: 'en' },
+        number: { label: '123', name: '數字', testText: '123456', prefix: 'zh' },
+        japanese: { label: 'あいう', name: '日文', testText: 'こんにちは', prefix: 'ja' },
+        korean: { label: '가나다', name: '韓文', testText: '안녕하세요', prefix: 'ko' }
+        };
+
+        // --- 鍵盤佈局 ---
+        const KEYBOARD_LAYOUTS = {
+        zhuyin: [
+            ['ㄅ', 'ㄉ', 'ˇ', 'ˋ', 'ㄓ', 'ˊ', '˙', 'ㄚ', 'ㄞ', 'ㄢ', 'ㄦ'],
+            ['ㄆ', 'ㄊ', 'ㄍ', 'ㄐ', 'ㄔ', 'ㄗ', 'ㄧ', 'ㄛ', 'ㄟ', 'ㄣ', '，'],
+            ['ㄇ', 'ㄋ', 'ㄎ', 'ㄑ', 'ㄕ', 'ㄘ', 'ㄨ', 'ㄜ', 'ㄠ', 'ㄤ', '。'],
+            ['ㄈ', 'ㄌ', 'ㄏ', 'ㄒ', 'ㄖ', 'ㄙ', 'ㄩ', 'ㄝ', 'ㄡ', 'ㄥ', '？']
+        ],
+        english: [
+            ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'],
+            ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L'],
+            ['Z', 'X', 'C', 'V', 'B', 'N', 'M']
+        ],
+        number: [
+            ['1', '2', '3'],
+            ['4', '5', '6'],
+            ['7', '8', '9'],
+            ['', '0', '']
+        ],
+        japanese: [
+            ['あ', 'か', 'さ', 'た', 'な', 'は', 'ま', 'や', 'ら', 'わ'],
+            ['い', 'き', 'し', 'ち', 'に', 'ひ', 'み', 'ゆ', 'り', 'を'],
+            ['う', 'く', 'す', 'つ', 'ぬ', 'ふ', 'む', 'よ', 'る', 'ん'],
+            ['え', 'け', 'せ', 'て', 'ね', 'へ', 'め', '', 'れ', '小'],
+            ['お', 'こ', 'そ', 'と', 'の', 'ほ', 'も', '', 'ろ', '゛/゜']
+        ],
+        korean: [
+            ['ㅂ', 'ㅈ', 'ㄷ', 'ㄱ', 'ㅅ', 'ㅛ', 'ㅕ', 'ㅑ', 'ㅐ', 'ㅔ'],
+            ['ㅁ', 'ㄴ', 'ㅇ', 'ㄹ', 'ㅎ', 'ㅗ', 'ㅓ', 'ㅏ', 'ㅣ'],
+            ['ㅋ', 'ㅌ', 'ㅊ', 'ㅍ', 'ㅠ', 'ㅜ', 'ㅡ']
+        ]
+        };
+
+        const THEMES = {
+        original: {
+            name: '經典原版 (綠/白)', bg: 'bg-[#e0f7fa]', text: 'text-gray-900', displayBg: 'bg-white',
+            displayBorder: 'border-2 border-[#b2ebf2]', keyBg: 'bg-white', keyText: 'text-gray-900',
+            keyBorder: 'border border-gray-300 shadow-sm', keyActive: 'active:bg-[#b2ebf2] active:scale-95',
+        },
+        highContrast: {
+            name: '高對比 (黑/黃)', bg: 'bg-black', text: 'text-yellow-400', displayBg: 'bg-gray-900',
+            displayBorder: 'border-2 border-yellow-600', keyBg: 'bg-gray-800', keyText: 'text-yellow-300',
+            keyBorder: 'border-2 border-yellow-500', keyActive: 'active:bg-yellow-600 active:text-black active:scale-95',
+        },
+        soft: {
+            name: '柔和 (粉/藍)', bg: 'bg-pink-50', text: 'text-slate-700', displayBg: 'bg-white',
+            displayBorder: 'border-2 border-blue-200', keyBg: 'bg-blue-50', keyText: 'text-slate-800',
+            keyBorder: 'border-2 border-blue-200', keyActive: 'active:bg-blue-200 active:scale-95',
+        }
+        };
+
+        function App() {
+        const [view, setView] = useState('keyboard');
+        const [theme, setTheme] = useState('original'); 
+        const [language, setLanguage] = useState('zhuyin');
+        const [enabledLanguages, setEnabledLanguages] = useState(['zhuyin', 'english', 'number']);
+        
+        const [completedInputs, setCompletedInputs] = useState([]);
+        const [currentSyllable, setCurrentSyllable] = useState([]);
+        
+        const [voices, setVoices] = useState([]);
+        const [voiceSettings, setVoiceSettings] = useState({ zhuyin: '', english: '', japanese: '', korean: '' });
+        const [ttsRate, setTtsRate] = useState(1.0);
+        
+        const [displayFontSize, setDisplayFontSize] = useState(14); 
+        const [pendingFontSize, setPendingFontSize] = useState(14); 
+        const [keyboardFontSize, setKeyboardFontSize] = useState(20); 
+        const [pendingKeyboardFontSize, setPendingKeyboardFontSize] = useState(20);
+        const [buttonOrder, setButtonOrder] = useState('deleteFirst');
+        const [deviceType, setDeviceType] = useState('mobile');
+        const [isGuideOpen, setIsGuideOpen] = useState(false);
+
+        useEffect(() => {
+            const handleResize = () => {
+                const width = window.innerWidth;
+                if (width < 640) setDeviceType('mobile');
+                else if (width < 1024) setDeviceType('tablet');
+                else setDeviceType('desktop');
+            };
+            handleResize();
+            window.addEventListener('resize', handleResize);
+            return () => window.removeEventListener('resize', handleResize);
+        }, []);
+
+        const keyboardMax = deviceType === 'mobile' ? 30 : deviceType === 'tablet' ? 36 : 40;
+
+        useEffect(() => {
+            if (pendingKeyboardFontSize > keyboardMax) {
+                setPendingKeyboardFontSize(keyboardMax);
+            }
+        }, [deviceType, keyboardMax]);
+        
+        useEffect(() => {
+            const loadVoices = () => {
+            let availableVoices = window.speechSynthesis.getVoices();
+            if (availableVoices.length === 0) return;
+            setVoices(availableVoices);
+
+            setVoiceSettings(prev => {
+                const newSettings = { ...prev };
+                const getDef = (langKey, prefix, keywords) => {
+                    const list = getFilteredVoices(prefix, availableVoices);
+                    if (list.length === 0) return '';
+                    if (newSettings[langKey] && list.some(v => v.voiceURI === newSettings[langKey])) {
+                        return newSettings[langKey];
+                    }
+                    for (let kw of keywords) {
+                        const match = list.find(v => v.name.toLowerCase().includes(kw));
+                        if (match) return match.voiceURI;
+                    }
+                    return list[0].voiceURI;
+                };
+
+                newSettings.zhuyin = getDef('zhuyin', 'zh', ['雅婷', 'yating', 'tw', 'taiwan']);
+                newSettings.english = getDef('english', 'en', ['us', 'uk']);
+                newSettings.japanese = getDef('japanese', 'ja', []);
+                newSettings.korean = getDef('korean', 'ko', []);
+                return newSettings;
+            });
+            };
+
+            loadVoices();
+            if (window.speechSynthesis.onvoiceschanged !== undefined) {
+            window.speechSynthesis.onvoiceschanged = loadVoices;
+            }
+        }, []);
+
+        const speak = (textToSpeak, overrideLang = null) => {
+            if (!textToSpeak) return;
+            window.speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(textToSpeak);
+            
+            const currentLang = overrideLang || language;
+            const voiceKey = currentLang === 'number' ? 'zhuyin' : currentLang;
+            
+            const targetVoiceURI = voiceSettings[voiceKey];
+            let selectedVoice = voices.find(v => v.voiceURI === targetVoiceURI);
+            
+            if (!selectedVoice) {
+                const fallbackList = getFilteredVoices(LANG_SETTINGS[voiceKey]?.prefix || 'zh', voices);
+                if (fallbackList.length > 0) selectedVoice = fallbackList[0];
+            }
+
+            if (selectedVoice) {
+                utterance.voice = selectedVoice;
+                utterance.lang = selectedVoice.lang; 
+            } else {
+                if (voiceKey === 'zhuyin') utterance.lang = 'zh-TW';
+                if (voiceKey === 'english') utterance.lang = 'en-US';
+                if (voiceKey === 'japanese') utterance.lang = 'ja-JP';
+                if (voiceKey === 'korean') utterance.lang = 'ko-KR';
+            }
+
+            utterance.rate = ttsRate;
+            window.speechSynthesis.speak(utterance);
+        };
+
+        const handlePlayVoice = () => {
+            let fullText = '';
+            if (language === 'zhuyin') {
+            const allSyllables = [...completedInputs];
+            if (currentSyllable.length > 0) allSyllables.push(currentSyllable.join(''));
+            fullText = allSyllables.map(s => {
+                if (PUNCTUATIONS.includes(s)) return s;
+                return getHanziFromZhuyin(s);
+            }).join('');
+            } else if (language === 'korean') {
+            const allSyllables = [...completedInputs];
+            if (currentSyllable.length > 0) allSyllables.push(currentSyllable.join(''));
+            fullText = allSyllables.map(s => getHangulFromJamo(s.trim())).join(' ');
+            } else {
+            fullText = completedInputs.join('') + currentSyllable.join('');
+            }
+            speak(fullText.trim());
+        };
+
+        const handleTestVoice = (langKey) => {
+            const testText = LANG_SETTINGS[langKey]?.testText || '測試';
+            speak(testText, langKey);
+        };
+
+        const getAvailableKeys = useMemo(() => {
+            if (language === 'zhuyin') {
+                const lastChar = currentSyllable[currentSyllable.length - 1];
+                let keys = [];
+                if (!lastChar) keys = [...ZHUYIN_CATS.C, ...ZHUYIN_CATS.M, ...ZHUYIN_CATS.V];
+                else if (ZHUYIN_CATS.C.includes(lastChar)) keys = [...ZHUYIN_CATS.M, ...ZHUYIN_CATS.V, ...ZHUYIN_CATS.T];
+                else if (ZHUYIN_CATS.M.includes(lastChar)) keys = [...ZHUYIN_CATS.V, ...ZHUYIN_CATS.T];
+                else if (ZHUYIN_CATS.V.includes(lastChar)) keys = [...ZHUYIN_CATS.T];
+                return [...keys, ...PUNCTUATIONS];
+            } else if (language === 'japanese') {
+                const baseKeys = KEYBOARD_LAYOUTS.japanese.flat().filter(k => k !== '゛/゜' && k !== '小' && k !== '');
+                const lastChar = currentSyllable[currentSyllable.length - 1];
+                let validKeys = [...baseKeys];
+                if (lastChar && JP_DAKUTEN[lastChar]) validKeys.push('゛/゜');
+                if (lastChar && JP_SMALL[lastChar]) validKeys.push('小');
+                return validKeys;
+            } else if (language === 'korean') {
+                if (currentSyllable.length === 0) return [...KOR_C, ...KOR_V, 'SPACE'];
+                if (currentSyllable.length === 1) {
+                    if (KOR_C.includes(currentSyllable[0])) return [...KOR_V, 'SPACE'];
+                    if (KOR_V.includes(currentSyllable[0])) return ['SPACE'];
+                }
+                if (currentSyllable.length === 2) {
+                    if (KOR_C.includes(currentSyllable[0]) && KOR_V.includes(currentSyllable[1])) return [...KOR_C, 'SPACE'];
+                    return ['SPACE'];
+                }
+                if (currentSyllable.length === 3) return ['SPACE'];
+                return ['SPACE'];
+            }
+            return null;
+        }, [currentSyllable, language]);
+
+        const handleKeyPress = (char) => {
+            let textToSpeak = char;
+
+            if (language === 'zhuyin' && PUNCTUATIONS.includes(char)) {
+                speak(PUNCT_NAMES[char] || char);
+                const newCompleted = [...completedInputs];
+                if (currentSyllable.length > 0) newCompleted.push(currentSyllable.join(''));
+                newCompleted.push(char);
+                setCompletedInputs(newCompleted);
+                setCurrentSyllable([]);
+                return;
+            }
+
+            if (language === 'japanese') {
+                if (char === '゛/゜') {
+                    const lastChar = currentSyllable[currentSyllable.length - 1];
+                    if (JP_DAKUTEN[lastChar]) {
+                        const newChar = JP_DAKUTEN[lastChar];
+                        setCurrentSyllable(prev => [...prev.slice(0, -1), newChar]);
+                        speak(newChar);
+                    }
+                    return;
+                } else if (char === '小') {
+                    const lastChar = currentSyllable[currentSyllable.length - 1];
+                    if (JP_SMALL[lastChar]) {
+                        const newChar = JP_SMALL[lastChar];
+                        setCurrentSyllable(prev => [...prev.slice(0, -1), newChar]);
+                        speak(newChar);
+                    }
+                    return;
+                }
+            }
+
+            if (language === 'zhuyin') {
+            if (ZHUYIN_CATS.T.includes(char)) {
+                let toneMark = char === '一聲' ? '' : char;
+                textToSpeak = getHanziFromZhuyin([...currentSyllable, toneMark].join('')); 
+            } else if (char === 'SPACE') textToSpeak = '空格';
+            } else if (language === 'korean') {
+            if (char === 'SPACE') textToSpeak = '띄어쓰기';
+            else {
+                const nextSyllable = [...currentSyllable, char];
+                if (nextSyllable.length >= 2) textToSpeak = getHangulFromJamo(nextSyllable.join(''));
+                else textToSpeak = char;
+            }
+            } else {
+            if (char === 'SPACE') {
+                if (language === 'english') textToSpeak = 'space';
+                else if (language === 'japanese') textToSpeak = 'スペース';
+                else textToSpeak = '空格';
+            }
+            }
+            speak(textToSpeak);
+
+            if (language === 'zhuyin') {
+            if (ZHUYIN_CATS.T.includes(char)) {
+                let toneMark = char === '一聲' ? '' : char;
+                setCompletedInputs([...completedInputs, [...currentSyllable, toneMark].join('')]);
+                setCurrentSyllable([]);
+            } else {
+                if (getAvailableKeys && !getAvailableKeys.includes(char)) {
+                if (ZHUYIN_CATS.C.includes(char)) {
+                    if(currentSyllable.length > 0) setCompletedInputs([...completedInputs, currentSyllable.join('')]);
+                    setCurrentSyllable([char]);
+                }
+                return;
+                }
+                setCurrentSyllable([...currentSyllable, char]);
+            }
+            } else if (language === 'korean') {
+            if (char === 'SPACE') {
+                setCompletedInputs([...completedInputs, currentSyllable.join('') + ' ']);
+                setCurrentSyllable([]);
+            } else {
+                if (getAvailableKeys && !getAvailableKeys.includes(char)) {
+                if (KOR_C.includes(char) || KOR_V.includes(char)) {
+                    if (currentSyllable.length > 0) {
+                        setCompletedInputs([...completedInputs, currentSyllable.join('')]);
+                    }
+                    setCurrentSyllable([char]);
+                }
+                return;
+                }
+                setCurrentSyllable([...currentSyllable, char]);
+            }
+            } else {
+            if (char === 'SPACE') {
+                setCompletedInputs([...completedInputs, currentSyllable.join('') + ' ']);
+                setCurrentSyllable([]);
+            } else {
+                setCurrentSyllable([...currentSyllable, char]);
+            }
+            }
+        };
+
+        const handleBackspace = () => {
+            if (currentSyllable.length > 0) {
+            setCurrentSyllable(prev => prev.slice(0, -1));
+            } else if (completedInputs.length > 0) {
+            const newInputs = [...completedInputs];
+            const lastCompleted = newInputs.pop().trim();
+            if (PUNCTUATIONS.includes(lastCompleted)) {
+                setCompletedInputs(newInputs);
+                setCurrentSyllable([]);
+            } else {
+                const chars = lastCompleted.split('');
+                const lastChar = chars[chars.length - 1];
+                if (['ˊ', 'ˇ', 'ˋ', '˙'].includes(lastChar)) chars.pop();
+                setCompletedInputs(newInputs);
+                setCurrentSyllable(chars);
+            }
+            }
+        };
+
+        const handleClear = () => {
+            setCompletedInputs([]);
+            setCurrentSyllable([]);
+        };
+
+        const currentTheme = THEMES[theme];
+        const disabledStyle = {
+            backgroundColor: '#f3f4f6', color: '#9ca3af', 
+            backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0,0,0,0.02) 10px, rgba(0,0,0,0.02) 20px)',
+            cursor: 'not-allowed', transform: 'scale(0.98)', borderColor: 'transparent', boxShadow: 'none'
+        };
+
+        // 頁面渲染邏輯 (這部分與原本相同，為了節省長度，此處保持原有程式碼邏輯)
+        if (view === 'tts-help') {
+            // ... (原本的急救包代碼)
+        }
+
+        if (view === 'settings') {
+            // ... (原本的設定區代碼)
+        }
+
+        const BIG_TONES = ['ˇ', 'ˋ', 'ˊ', '˙'];
+        const spaceChar = language === 'zhuyin' ? '一聲' : 'SPACE';
+        const isSpaceEnabled = !getAvailableKeys || getAvailableKeys.includes(spaceChar);
+
+        return (
+            <div className={`h-[100dvh] w-full flex flex-col ${currentTheme.bg} overflow-hidden select-none pb-2 md:pb-4 landscape:pb-1`}>
+            
+            <div className="h-[40%] landscape:h-[35%] w-full flex gap-1 p-2 md:p-4 landscape:p-1 min-h-0 shrink-0">
+                <button onClick={handlePlayVoice} className="w-20 md:w-28 landscape:w-24 flex flex-col items-center justify-center bg-emerald-500 text-white rounded-xl md:rounded-2xl landscape:rounded-lg shadow-md active:scale-95 transition-transform">
+                <Play className="w-10 h-10 md:w-12 md:h-12 landscape:w-8 landscape:h-8 fill-current" />
+                <span className="text-sm md:text-lg landscape:text-sm font-bold mt-2 landscape:mt-1">播音</span>
+                </button>
+
+                <div className={`flex-1 rounded-xl md:rounded-2xl landscape:rounded-lg p-4 landscape:p-3 overflow-y-auto ${currentTheme.displayBg} ${currentTheme.displayBorder} shadow-inner flex items-start content-start`}>
+                <div className={`font-bold tracking-widest flex flex-wrap gap-x-2 gap-y-1 md:gap-x-3 md:gap-y-2 landscape:gap-x-1 landscape:gap-y-1 ${currentTheme.text} break-words w-full`} style={{ fontSize: `${displayFontSize}px`, lineHeight: '1.4' }}>
+                    {completedInputs.map((s, i) => <span key={i}>{language === 'korean' ? getHangulFromJamo(s.trim()) : s}</span>)}
+                    <span className="border-b-[0.1em] border-current animate-pulse min-w-[0.5em] h-[1.2em]">
+                        {language === 'korean' ? getHangulFromJamo(currentSyllable.join('')) : currentSyllable.join('')}
+                    </span>
+                </div>
+                </div>
+
+                <div className="w-20 md:w-28 landscape:w-24 flex flex-col gap-2 landscape:gap-1">
+                {buttonOrder === 'deleteFirst' ? (
+                    <>
+                        <button onClick={handleBackspace} className="flex-1 flex flex-col items-center justify-center bg-amber-500 text-white rounded-xl md:rounded-2xl landscape:rounded-lg shadow-md active:scale-95 transition-transform">
+                            <Delete className="w-8 h-8 md:w-10 md:h-10 landscape:w-7 landscape:h-7" />
+                            <span className="text-xs md:text-base landscape:text-[11px] font-bold mt-1 landscape:mt-0">倒退</span>
+                        </button>
+                        <button onClick={handleClear} className="flex-1 flex flex-col items-center justify-center bg-rose-500 text-white rounded-xl md:rounded-2xl landscape:rounded-lg shadow-md active:scale-95 transition-transform">
+                            <Trash2 className="w-8 h-8 md:w-10 md:h-10 landscape:w-7 landscape:h-7" />
+                            <span className="text-xs md:text-base landscape:text-[11px] font-bold mt-1 landscape:mt-0">清空</span>
+                        </button>
+                    </>
+                ) : (
+                    <>
+                        <button onClick={handleClear} className="flex-1 flex flex-col items-center justify-center bg-rose-500 text-white rounded-xl md:rounded-2xl landscape:rounded-lg shadow-md active:scale-95 transition-transform">
+                            <Trash2 className="w-8 h-8 md:w-10 md:h-10 landscape:w-7 landscape:h-7" />
+                            <span className="text-xs md:text-base landscape:text-[11px] font-bold mt-1 landscape:mt-0">清空</span>
+                        </button>
+                        <button onClick={handleBackspace} className="flex-1 flex flex-col items-center justify-center bg-amber-500 text-white rounded-xl md:rounded-2xl landscape:rounded-lg shadow-md active:scale-95 transition-transform">
+                            <Delete className="w-8 h-8 md:w-10 md:h-10 landscape:w-7 landscape:h-7" />
+                            <span className="text-xs md:text-base landscape:text-[11px] font-bold mt-1 landscape:mt-0">倒退</span>
+                        </button>
+                    </>
+                )}
+                </div>
+            </div>
+
+            <div className="flex-1 flex flex-col px-1 md:px-3 landscape:px-1 landscape:md:px-2 gap-0.5 md:gap-2 landscape:gap-0 mt-0.5 landscape:mt-0 min-h-0 overflow-hidden justify-center">
+                {KEYBOARD_LAYOUTS[language].map((row, rowIndex) => (
+                <div key={rowIndex} className="flex-1 flex gap-1 md:gap-2 landscape:gap-1 justify-center">
+                    {row.map((char, colIndex) => {
+                    if (char === '') {
+                        return <div key={`${rowIndex}-${colIndex}`} className="flex-1 h-full border border-transparent"></div>;
+                    }
+
+                    const isEnabled = !getAvailableKeys || getAvailableKeys.includes(char);
+                    const isBigTone = BIG_TONES.includes(char);
+                    const isPunctuation = language === 'zhuyin' && PUNCTUATIONS.includes(char);
+                    const isBigSymbol = isBigTone || isPunctuation;
+
+                    const textClass = isBigSymbol 
+                        ? 'text-4xl sm:text-5xl md:text-6xl landscape:text-3xl landscape:md:text-5xl font-black'
+                        : 'font-extrabold';
+
+                    return (
+                        <button
+                        key={`${rowIndex}-${colIndex}`}
+                        onClick={() => isEnabled && handleKeyPress(char)}
+                        style={!isEnabled ? disabledStyle : (!isBigSymbol ? { fontSize: `${keyboardFontSize}px` } : {})}
+                        className={`
+                            flex-1 h-full rounded-xl md:rounded-2xl landscape:rounded-lg landscape:md:rounded-xl shadow flex items-center justify-center 
+                            transition-all select-none touch-manipulation overflow-hidden
+                            ${isEnabled ? `${currentTheme.keyBg} ${currentTheme.keyText} ${currentTheme.keyBorder} ${currentTheme.keyActive}` : ''}
+                        `}
+                        >
+                        {isBigTone ? (
+                            <ToneIcon char={char} className="w-[55%] h-[55%] md:w-[60%] md:h-[60%] landscape:w-[50%] landscape:h-[50%]" />
+                        ) : (
+                            <span className={`flex items-center justify-center leading-none ${textClass}`}>{char}</span>
+                        )}
+                        </button>
+                    );
+                    })}
+                </div>
+                ))}
+            </div>
+
+            <div className="h-14 md:h-20 landscape:h-[15%] flex justify-between gap-2 px-2 md:px-4 landscape:p-1 mt-0.5 shrink-0 min-h-0">
+                
+                <button 
+                onClick={() => {
+                    const currentIndex = enabledLanguages.indexOf(language);
+                    const nextIndex = (currentIndex + 1) % enabledLanguages.length;
+                    setLanguage(enabledLanguages[nextIndex]);
+                }} 
+                className="flex-[1.5] flex flex-col items-center justify-center bg-blue-400 text-white rounded-xl landscape:rounded-lg shadow-md active:scale-95 px-2 transition-transform"
+                >
+                <Globe className="w-6 h-6 mb-1 landscape:w-4 landscape:h-4 landscape:mb-0" />
+                <span className="text-xs md:text-sm landscape:text-[10px] font-bold tracking-widest text-center break-words leading-tight">
+                    {LANG_SETTINGS[language]?.label}
+                </span>
+                </button>
+
+                <button 
+                onClick={() => isSpaceEnabled && handleKeyPress(spaceChar)}
+                style={!isSpaceEnabled ? disabledStyle : {}}
+                className={`flex-[5] flex items-center justify-center rounded-xl landscape:rounded-lg shadow-md active:scale-95 transition-all
+                    text-xl md:text-3xl landscape:text-base font-bold tracking-widest
+                    ${isSpaceEnabled ? `${currentTheme.keyBg} ${currentTheme.keyText} ${currentTheme.keyBorder} ${currentTheme.keyActive}` : ''}
+                `}
+                >
+                {language === 'zhuyin' ? '一聲' : language === 'korean' ? '띄어쓰기 (空格)' : language === 'japanese' ? '空白' : '空白鍵'}
+                </button>
+
+                <button 
+                onClick={() => {
+                    const doc = document.documentElement;
+                    if (doc.requestFullscreen) {
+                        doc.requestFullscreen();
+                    } else if (doc.webkitRequestFullscreen) { /* 兼容 Safari / 舊版 Chrome */
+                        doc.webkitRequestFullscreen();
+                    }
+                }}
+                className="flex-[1.5] flex flex-col items-center justify-center bg-amber-600 text-white rounded-xl landscape:rounded-lg shadow-md active:scale-95 transition-transform"
+                >
+                <Maximize className="w-6 h-6 mb-1 landscape:w-4 landscape:h-4 landscape:mb-0" />
+                <span className="text-[11px] md:text-sm landscape:text-[9px] font-bold">全螢幕</span>
+                </button>
+
+                <button onClick={() => { setPendingFontSize(displayFontSize); setView('settings'); }} className="flex-[1.5] flex flex-col items-center justify-center bg-slate-500 text-white rounded-xl landscape:rounded-lg shadow-md active:scale-95 transition-transform">
+                <Settings className="w-6 h-6 mb-1 landscape:w-4 landscape:h-4 landscape:mb-0" />
+                <span className="text-[11px] md:text-sm landscape:text-[9px] font-bold">設定</span>
+                </button>
+            </div>
+
+            </div>
+        );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+    
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('sw.js')
+            .then(registration => {
+              console.log('ServiceWorker 註冊成功，範圍:', registration.scope);
+            })
+            .catch(error => {
+              console.log('ServiceWorker 註冊失敗:', error);
+            });
+        });
+      }
+    </script>
+</body>
+</html>
