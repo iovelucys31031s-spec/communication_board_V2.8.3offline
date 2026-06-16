@@ -1,65 +1,64 @@
-const CACHE_NAME = 'aac-board-v2.8.3-cache';
+const CACHE_NAME = 'aac-board-v2.8.4'; // 更新版本號
 
-// 需要在離線時也能存取的資源列表
+// 網頁需要的所有檔案與外部資源
 const urlsToCache = [
   './',
   './index.html',
   './manifest.json',
-  // 快取外部函式庫，確保斷網時依然能載入
+  './icon.png',
   'https://cdn.tailwindcss.com',
   'https://unpkg.com/react@18/umd/react.production.min.js',
   'https://unpkg.com/react-dom@18/umd/react-dom.production.min.js',
   'https://unpkg.com/@babel/standalone/babel.min.js'
 ];
 
-// 安裝 Service Worker 並快取資源
 self.addEventListener('install', event => {
   event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then(cache => {
-        console.log('Opened cache');
-        return cache.addAll(urlsToCache);
-      })
+    caches.open(CACHE_NAME).then(cache => {
+      console.log('開始快取資源...');
+      // 強制將外部 CDN 資源抓下來存進手機
+      return Promise.all(urlsToCache.map(url => {
+        return fetch(url, { mode: 'no-cors' }).then(response => {
+          if (response.ok || response.type === 'opaque') {
+            return cache.put(url, response);
+          }
+        }).catch(error => console.log('資源快取失敗:', url, error));
+      }));
+    })
   );
   self.skipWaiting();
 });
 
-// 攔截網路請求：如果快取有就用快取，沒有再去網路上抓
 self.addEventListener('fetch', event => {
   event.respondWith(
-    caches.match(event.request)
-      .then(response => {
-        // 快取有命中，直接回傳
-        if (response) {
-          return response;
+    caches.match(event.request).then(response => {
+      if (response) return response; // 如果手機裡有存，就直接用手機裡的
+
+      // 如果沒存到，就試著去網路抓，抓到順便存起來
+      return fetch(event.request).then(networkResponse => {
+        if (!networkResponse || (networkResponse.status !== 200 && networkResponse.type !== 'opaque')) {
+          return networkResponse;
         }
-        return fetch(event.request).then(
-          function(response) {
-            // 檢查是否為有效的請求
-            if(!response || response.status !== 200 || response.type !== 'basic') {
-              return response;
-            }
-            // 若為新的資源，將其動態加入快取
-            var responseToCache = response.clone();
-            caches.open(CACHE_NAME)
-              .then(function(cache) {
-                cache.put(event.request, responseToCache);
-              });
-            return response;
-          }
-        );
-      })
+        const responseToCache = networkResponse.clone();
+        caches.open(CACHE_NAME).then(cache => {
+          cache.put(event.request, responseToCache);
+        });
+        return networkResponse;
+      }).catch(error => {
+        console.log('目前處於離線狀態，且該資源未快取。', error);
+      });
+    })
   );
 });
 
-// 更新 Service Worker 時清除舊的快取
+// 清除舊版快取
 self.addEventListener('activate', event => {
-  const cacheWhitelist = [CACHE_NAME];
   event.waitUntil(
     caches.keys().then(cacheNames => {
       return Promise.all(
         cacheNames.map(cacheName => {
-          if (cacheWhitelist.indexOf(cacheName) === -1) {
+          if (cacheName !== CACHE_NAME) {
+            console.log('清除舊快取:', cacheName);
             return caches.delete(cacheName);
           }
         })
