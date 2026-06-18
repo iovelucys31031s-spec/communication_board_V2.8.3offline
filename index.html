@@ -13,9 +13,9 @@
     <title>有聲注音溝通板(Web版)</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script crossorigin src="https://cdn.jsdelivr.net/npm/react@18.2.0/umd/react.production.min.js"></script>
+    <script crossorigin src="https://cdn.jsdelivr.net/npm/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.23.6/babel.min.js"></script>
 </head>
 <body class="overscroll-none overflow-hidden">
     <div id="root"></div>
@@ -227,6 +227,7 @@
         const [buttonOrder, setButtonOrder] = useState('deleteFirst');
         const [deviceType, setDeviceType] = useState('mobile');
         const [isGuideOpen, setIsGuideOpen] = useState(false);
+        const [offlineReady, setOfflineReady] = useState(false); // 離線狀態提示
 
         useEffect(() => {
             const handleResize = () => {
@@ -238,6 +239,15 @@
             handleResize();
             window.addEventListener('resize', handleResize);
             return () => window.removeEventListener('resize', handleResize);
+        }, []);
+
+        // 監聽 Service Worker 的下載完成事件，觸發置中彈跳視窗
+        useEffect(() => {
+            const handleInstalled = () => {
+                setOfflineReady(true);
+            };
+            window.addEventListener('pwa-installed', handleInstalled);
+            return () => window.removeEventListener('pwa-installed', handleInstalled);
         }, []);
 
         const keyboardMax = deviceType === 'mobile' ? 30 : deviceType === 'tablet' ? 36 : 40;
@@ -682,7 +692,7 @@
                                             </button>
                                             <button className="flex-1 bg-slate-500 text-white rounded-xl flex flex-col items-center justify-center h-full text-[9px] font-bold shadow-md relative">
                                                 <span className="absolute top-0.5 left-0.5 bg-slate-700 text-white px-0.5 rounded-[4px] scale-[0.7] origin-top-left">7</span>
-                                                <svg className="w-4 h-4 mb-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+                                                <svg className="w-4 h-4 mb-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
                                                 設定
                                             </button>
                                         </div>
@@ -1010,8 +1020,32 @@
         const isSpaceEnabled = !getAvailableKeys || getAvailableKeys.includes(spaceChar);
 
         return (
-            <div className={`h-[100dvh] w-full flex flex-col ${currentTheme.bg} overflow-hidden select-none pb-2 md:pb-4 landscape:pb-1`}>
+            <div className={`h-[100dvh] w-full flex flex-col ${currentTheme.bg} overflow-hidden select-none pb-2 md:pb-4 landscape:pb-1 relative`}>
             
+            {/* 新增的離線狀態彈跳視窗 (全螢幕置中、強制手動點擊關閉) */}
+            {offlineReady && (
+                <div className="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center p-4 animate-fade-in backdrop-blur-sm">
+                    <div className="bg-white rounded-3xl p-6 md:p-8 max-w-sm w-full shadow-2xl flex flex-col items-center text-center border-4 border-[#92A8D1]">
+                        <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4 shadow-inner">
+                            <span className="text-3xl">✅</span>
+                        </div>
+                        <h3 className="text-xl md:text-2xl font-black text-gray-800 mb-3">檔案下載完成</h3>
+                        <p className="text-base md:text-lg text-gray-600 mb-6 leading-relaxed">
+                            系統已自動將溝通板所需檔案儲存至本機。<br/>
+                            <span className="inline-block mt-2 bg-[#F7CAC9] text-gray-800 px-3 py-1.5 rounded-lg font-bold">
+                                現在即使沒有網路也能正常使用囉！
+                            </span>
+                        </p>
+                        <button 
+                            onClick={() => setOfflineReady(false)}
+                            className="w-full bg-[#92A8D1] hover:bg-blue-500 text-white font-black text-lg py-3 md:py-4 rounded-xl shadow-md active:scale-95 transition-all"
+                        >
+                            知道了，開始使用
+                        </button>
+                    </div>
+                </div>
+            )}
+
             <div className="h-[40%] landscape:h-[35%] w-full flex gap-1 p-2 md:p-4 landscape:p-1 min-h-0 shrink-0">
                 <button onClick={handlePlayVoice} className="w-20 md:w-28 landscape:w-24 flex flex-col items-center justify-center bg-emerald-500 text-white rounded-xl md:rounded-2xl landscape:rounded-lg shadow-md active:scale-95 transition-transform">
                 <Play className="w-10 h-10 md:w-12 md:h-12 landscape:w-8 landscape:h-8 fill-current" />
@@ -1154,12 +1188,21 @@
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
           navigator.serviceWorker.register('sw.js')
-            .then(registration => {
-              console.log('ServiceWorker 註冊成功，範圍:', registration.scope);
+            .then(reg => {
+              console.log('ServiceWorker 註冊成功');
+              
+              // 監聽 Service Worker 的狀態變化，當下載完成時發送事件通知前端畫面
+              reg.addEventListener('updatefound', () => {
+                const newWorker = reg.installing;
+                newWorker.addEventListener('statechange', () => {
+                  if (newWorker.state === 'installed') {
+                    // 發送自訂事件給 React 接收
+                    window.dispatchEvent(new CustomEvent('pwa-installed'));
+                  }
+                });
+              });
             })
-            .catch(error => {
-              console.log('ServiceWorker 註冊失敗:', error);
-            });
+            .catch(error => console.log('ServiceWorker 註冊失敗:', error));
         });
       }
     </script>
