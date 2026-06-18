@@ -1,69 +1,58 @@
-const CACHE_NAME = 'aac-board-v2.8.4'; // 更新版本號
+const CACHE_NAME = 'aac-board-v2.8.6'; // 更新版本號
 
-// 網頁需要的所有檔案與外部資源
 const urlsToCache = [
   './',
-  './index.html',
+  './index.html', // 記得你的 HTML 檔名在 GitHub 上要是小寫的 index.html 喔！
   './manifest.json',
   './icon.png',
   'https://cdn.tailwindcss.com',
-  'https://unpkg.com/react@18/umd/react.production.min.js',
-  'https://unpkg.com/react-dom@18/umd/react-dom.production.min.js',
-  'https://unpkg.com/@babel/standalone/babel.min.js'
+  // 下方三個網址已經同步更新為 jsdelivr 的穩定來源
+  'https://cdn.jsdelivr.net/npm/react@18.2.0/umd/react.production.min.js',
+  'https://cdn.jsdelivr.net/npm/react-dom@18.2.0/umd/react-dom.production.min.js',
+  'https://cdn.jsdelivr.net/npm/@babel/standalone@7.23.6/babel.min.js'
 ];
 
 self.addEventListener('install', event => {
+  self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache => {
-      console.log('開始快取資源...');
-      // 強制將外部 CDN 資源抓下來存進手機
+      // 確保即使某個檔案載入較慢，也會盡可能把所有檔案抓進手機
       return Promise.all(urlsToCache.map(url => {
-        return fetch(url, { mode: 'no-cors' }).then(response => {
+        return fetch(url).then(response => {
           if (response.ok || response.type === 'opaque') {
             return cache.put(url, response);
           }
-        }).catch(error => console.log('資源快取失敗:', url, error));
+        }).catch(err => console.log('快取失敗的檔案:', url, err));
       }));
     })
   );
-  self.skipWaiting();
 });
 
 self.addEventListener('fetch', event => {
   event.respondWith(
     caches.match(event.request).then(response => {
-      if (response) return response; // 如果手機裡有存，就直接用手機裡的
-
-      // 如果沒存到，就試著去網路抓，抓到順便存起來
-      return fetch(event.request).then(networkResponse => {
-        if (!networkResponse || (networkResponse.status !== 200 && networkResponse.type !== 'opaque')) {
-          return networkResponse;
-        }
-        const responseToCache = networkResponse.clone();
-        caches.open(CACHE_NAME).then(cache => {
-          cache.put(event.request, responseToCache);
+      // 離線時：如果有存到檔案，直接回傳
+      if (response) return response;
+      
+      // 有網路時：一邊抓取新檔案，一邊存起來備用
+      return fetch(event.request).then(netRes => {
+        return caches.open(CACHE_NAME).then(cache => {
+          cache.put(event.request, netRes.clone());
+          return netRes;
         });
-        return networkResponse;
-      }).catch(error => {
-        console.log('目前處於離線狀態，且該資源未快取。', error);
       });
-    })
+    }).catch(() => console.log('目前處於離線狀態，且無法取得該檔案。'))
   );
 });
 
-// 清除舊版快取
 self.addEventListener('activate', event => {
+  // 清除舊版本的快取，確保家長永遠使用最新版
   event.waitUntil(
-    caches.keys().then(cacheNames => {
-      return Promise.all(
-        cacheNames.map(cacheName => {
-          if (cacheName !== CACHE_NAME) {
-            console.log('清除舊快取:', cacheName);
-            return caches.delete(cacheName);
-          }
-        })
-      );
-    })
+    caches.keys().then(keys => Promise.all(
+      keys.map(key => {
+        if (key !== CACHE_NAME) return caches.delete(key);
+      })
+    ))
   );
   self.clients.claim();
 });
